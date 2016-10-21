@@ -3,31 +3,40 @@ const vscode = require('vscode'),
     path = require('path'),
     fs = require('fs-extra');
 
+var document = vscode.window.activeTextEditor.document
+
+var fileName = `${new Date().getTime()}.html`,
+    tempFolder = path.resolve(__dirname, "../tmp"),
+    filePath = `${path.resolve(tempFolder, fileName)}`;
+
 exports.showPreview = function () {
-    let document = vscode.window.activeTextEditor.document
-
-    let fileName = `${new Date().getTime()}.html`,
-        filePath = `${path.resolve(__dirname, "../tmp/",fileName)}`;
-
     let previewTheme = vscode.workspace.getConfiguration("raml").previewTheme;
 
     raml2html.render(document.uri.fsPath, raml2html.getDefaultConfig(`./${previewTheme}.nunjucks`, path.resolve(__dirname, "../raml2html_template"))).then((result) => {
-        fs.writeFile(filePath, result, (errorCreateFile) => {
-            if (errorCreateFile) {
-                vscode.window.showErrorMessage(errorCreateFile.toString());
-                throw errorCreateFile
+
+        fs.ensureDir(tempFolder, function (errDirCreation) {
+            if (errDirCreation) {
+                vscode.window.showErrorMessage(errDirCreation.toString());
+                throw errDirCreation
             }
 
-            let uri = vscode.Uri.parse(`file://${filePath}`)
-            vscode.commands.executeCommand(
-                "vscode.previewHtml",
-                uri,
-                vscode.window.activeTextEditor.viewColumn,
-                "RAML Preview"
-            );
+            fs.writeFile(filePath, result, (errorCreateFile) => {
+                if (errorCreateFile) {
+                    vscode.window.showErrorMessage(errorCreateFile.toString());
+                    throw errorCreateFile
+                }
 
-            //shows file URI 
-            vscode.window.showInformationMessage(`file://${filePath}`)
+                let uri = vscode.Uri.parse(`file://${filePath}`)
+                vscode.commands.executeCommand(
+                    "vscode.previewHtml",
+                    uri,
+                    vscode.window.activeTextEditor.viewColumn,
+                    "RAML Preview"
+                );
+
+                //shows file URI 
+                vscode.window.showInformationMessage(`file://${filePath}`)
+            });
         });
     }, (error) => {
         vscode.window.showErrorMessage(error.toString()); throw error
@@ -36,10 +45,10 @@ exports.showPreview = function () {
 
 exports.cleanUp = function () {
     console.log("Cleaning up tmp folder...");
-    
-    fs.emptyDir(path.resolve(__dirname, "../tmp"), (errorFilesDeletion) => {
+
+    fs.emptyDir(tempFolder, (errorFilesDeletion) => {
         if (errorFilesDeletion) {
-            vscode.window.showErrorMessage(errorFilesDeletion.toString()); 
+            vscode.window.showErrorMessage(errorFilesDeletion.toString());
             throw errorFilesDeletion;
         }
     })

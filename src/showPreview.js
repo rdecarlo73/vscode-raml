@@ -3,13 +3,13 @@ const vscode = require('vscode'),
     path = require('path'),
     fs = require('fs-extra');
 
-var document = vscode.window.activeTextEditor.document
-
 var fileName = `${new Date().getTime()}.html`,
     tempFolder = path.resolve(__dirname, "../tmp"),
     filePath = `${path.resolve(tempFolder, fileName)}`;
 
 exports.showPreview = function () {
+    var document = vscode.window.activeTextEditor.document
+    
     let previewTheme = vscode.workspace.getConfiguration("raml").previewTheme;
 
     raml2html.render(document.uri.fsPath, raml2html.getDefaultConfig(`./${previewTheme}.nunjucks`, path.resolve(__dirname, "../raml2html_template"))).then((result) => {
